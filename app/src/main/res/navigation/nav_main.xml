@@ -7,7 +7,44 @@
 
     <fragment
         android:id="@+id/loginFragment"
-        android:name="ir.shahabazimi.masterkeyexample.ui.LoginFragment"
+        android:name="ir.shahabazimi.masterkeyexample.ui.login.LoginFragment"
         android:label="fragment_login"
-        tools:layout="@layout/fragment_login" />
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_to_fingerprintFragment"
+            app:destination="@id/fingerprintFragment" />
+        <action
+            android:id="@+id/action_loginFragment_to_hubFragment"
+            app:destination="@id/hubFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/fingerprintFragment"
+        android:name="ir.shahabazimi.masterkeyexample.ui.fingerprint.FingerprintFragment"
+        android:label="FingerprintFragment"
+        tools:layout="@layout/fragment_fingerprint">
+
+        <argument
+            android:name="password"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
+        <action
+            android:id="@+id/action_fingerprintFragment_to_hubFragment"
+            app:destination="@id/hubFragment" />
+
+    </fragment>
+    <fragment
+        android:id="@+id/hubFragment"
+        android:name="ir.shahabazimi.masterkeyexample.ui.hub.HubFragment"
+        android:label="HubFragment"
+        tools:layout="@layout/fragment_hub">
+
+        <argument
+            android:name="password"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
+    </fragment>
+
+
 </navigation>

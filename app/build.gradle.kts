@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.androidx.navigation.ui)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.crypto)
+    implementation(libs.koin.main)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

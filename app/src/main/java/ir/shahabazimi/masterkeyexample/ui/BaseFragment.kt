@@ -7,6 +7,10 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
 
+/**
+ * @Author: Shahab Azimi
+ * @Date: 2024 - 09 - 14
+ **/
 abstract class BaseFragment<B : ViewBinding> : Fragment() {
 
     val binding

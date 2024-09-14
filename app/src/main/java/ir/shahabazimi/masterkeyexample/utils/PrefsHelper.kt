@@ -1,7 +1,8 @@
-package ir.shahabazimi.masterkeyexample
+package ir.shahabazimi.masterkeyexample.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import ir.shahabazimi.masterkeyexample.utils.Constants.PREFS_FILE_NAME
 
 /**
  * @Author: Shahab Azimi
@@ -10,7 +11,7 @@ import android.content.SharedPreferences
 class PrefsHelper private constructor(context: Context) {
 
     private val pref: SharedPreferences by lazy {
-        context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
     }
 
 
@@ -27,13 +28,14 @@ class PrefsHelper private constructor(context: Context) {
         apply()
     }
 
-
     fun loadBoolean(key: String) = pref.getBoolean(key, false)
 
+    fun remove(key: String) = with(pref.edit()) {
+        remove(key)
+        apply()
+    }
 
     companion object {
-        private const val FILE_NAME: String = "master_key_example_secure_pref"
-
         @Volatile
         private var instance: PrefsHelper? = null
         operator fun invoke(context: Context): PrefsHelper =

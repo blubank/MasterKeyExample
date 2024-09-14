@@ -7,6 +7,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import ir.shahabazimi.masterkeyexample.R
 
+/**
+ * @Author: Shahab Azimi
+ * @Date: 2024 - 09 - 14
+ **/
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

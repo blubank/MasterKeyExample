@@ -1,27 +1,28 @@
+package ir.shahabazimi.masterkeyexample.utils
+
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
-import ir.shahabazimi.masterkeyexample.BiometricResult
+import ir.shahabazimi.masterkeyexample.utils.Constants.ANDROID_KEY_STORE
+import ir.shahabazimi.masterkeyexample.utils.Constants.KEY_ALIAS
+import ir.shahabazimi.masterkeyexample.utils.Constants.KEY_SIZE
 import java.security.KeyStore
 import java.util.concurrent.Executors
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 
+/**
+ * @Author: Shahab Azimi
+ * @Date: 2024 - 09 - 14
+ **/
 class KeyStoreManager {
 
-    companion object {
-        private const val ANDROID_KEY_STORE = "AndroidKeyStore"
-        private const val KEY_SIZE = 256
-        private const val KEY_ALIAS = "MasterKeyExampleAlias"
-
-    }
-
-    private val cryptoObject: BiometricPrompt.CryptoObject?
-        get() = getKey()?.let { key ->
+    private val cryptoObject: BiometricPrompt.CryptoObject
+        get() = generateAndStoreKey().let { key ->
             val cipher = createCipher()
             cipher.init(Cipher.ENCRYPT_MODE or Cipher.DECRYPT_MODE, key)
             BiometricPrompt.CryptoObject(cipher)
@@ -35,7 +36,7 @@ class KeyStoreManager {
         )
     }
 
-    fun generateAndStoreKey(): SecretKey {
+    private fun generateAndStoreKey(): SecretKey {
         val key = getKey()
         if (key != null) return key
 
@@ -51,13 +52,14 @@ class KeyStoreManager {
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
             .setUserAuthenticationRequired(true)
             .setKeySize(KEY_SIZE)
+            .setInvalidatedByBiometricEnrollment(true)
             .build()
 
         keyGenerator.init(keyGenParameterSpec)
         return keyGenerator.generateKey()
     }
 
-    private fun getKey(): SecretKey? {
+    fun getKey(): SecretKey? {
         val keyStore = KeyStore.getInstance(ANDROID_KEY_STORE)
         keyStore.load(null)
         return keyStore.getKey(KEY_ALIAS, null) as? SecretKey
@@ -70,7 +72,7 @@ class KeyStoreManager {
         return true
     }
 
-    fun authenticateAndUseKey(
+    fun authenticate(
         fragmentActivity: FragmentActivity,
         biometricListener: BiometricResult
     ) {
@@ -95,7 +97,7 @@ class KeyStoreManager {
                     biometricListener.onCancel()
                 }
             }
-        ).authenticate(promptInfo, cryptoObject!!)
+        ).authenticate(promptInfo, cryptoObject)
     }
 
     fun checkBiometricSupport(context: Context): Boolean {

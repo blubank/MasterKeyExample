@@ -12,6 +12,7 @@ constraintlayout = "2.1.4"
 navigationFragment = "2.8.0"
 androidxBiometricVersion = '1.2.0-alpha05'
 androidxCryptoVersion = '1.1.0-alpha06'
+koinVersion = "3.5.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -26,6 +27,7 @@ androidx-activity = { group = "androidx.activity", name = "activity", version.re
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "androidxBiometricVersion" }
 androidx-crypto = { module = "androidx.security:security-crypto-ktx", version.ref = "androidxCryptoVersion" }
+koin-main = { group = "io.insert-koin", name = "koin-android", version.ref = "koinVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
