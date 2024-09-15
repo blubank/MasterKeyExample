@@ -3,14 +3,17 @@ package ir.shahabazimi.masterkeyexample.utils
 import android.content.Context
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
+import ir.shahabazimi.masterkeyexample.data.AuthenticateResultType
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.security.KeyStoreException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.concurrent.Executors
@@ -99,10 +102,14 @@ class KeyStoreManager {
     }
 
     fun deleteKey(): Boolean {
-        val keyStore = KeyStore.getInstance(ANDROID_KEY_STORE)
-        keyStore.load(null)
-        keyStore.deleteEntry(KEY_ALIAS)
-        return true
+        try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEY_STORE)
+            keyStore.load(null)
+            keyStore.deleteEntry(KEY_ALIAS)
+            return true
+        } catch (e: KeyStoreException) {
+            return false
+        }
     }
 
     fun encrypt(plainText: String): ByteArray {
@@ -132,9 +139,10 @@ class KeyStoreManager {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     val cipher = result.cryptoObject?.cipher
-                    if (cipher == null)
-                        biometricListener.onError("cipher is null")
-                    else
+                    if (cipher == null) {
+                        deleteKey()
+                        biometricListener.onError(AuthenticateResultType.REMOVED_KEY.name)
+                    } else
                         biometricListener.onSuccess(cipher)
                 }
 
@@ -144,13 +152,19 @@ class KeyStoreManager {
                 }
             }
         )
-        prompt.authenticate(promptInfo, cryptoObject())
+        try {
+            prompt.authenticate(promptInfo, cryptoObject())
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            deleteKey()
+            biometricListener.onError(AuthenticateResultType.REMOVED_KEY.name)
+        }
 
     }
 
     fun checkBiometricSupport(context: Context): Boolean {
         val biometricManager = BiometricManager.from(context)
         return when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)) {
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> false
             BiometricManager.BIOMETRIC_SUCCESS -> true
             else -> false
         }

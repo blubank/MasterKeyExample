@@ -5,11 +5,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import ir.shahabazimi.masterkeyexample.R
 import ir.shahabazimi.masterkeyexample.data.AuthenticateResultType
 import ir.shahabazimi.masterkeyexample.databinding.FragmentLoginBinding
 import ir.shahabazimi.masterkeyexample.ui.BaseFragment
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
@@ -29,6 +32,7 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        observeAuthenticateResult()
         initViews()
     }
 
@@ -43,7 +47,6 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
 
         loginButton.setOnClickListener {
             if (isPasswordSaved) {
-                observeAuthenticateResult()
                 viewModel.authenticate(requireActivity())
             } else {
                 loginAndNavigate()
@@ -80,7 +83,7 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
 
                 AuthenticateResultType.REMOVED_KEY -> {
                     Toast.makeText(context, it.data, Toast.LENGTH_SHORT).show()
-                    binding.loginButton.setIconResource(0)
+                    initViews()
                 }
             }
 
@@ -99,6 +102,15 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
         val username = username.text.toString().trim()
         val password = password.text.toString().trim()
         return username.isNotEmpty() && password.isNotEmpty()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            delay(100)
+            if (viewModel.isPasswordSaved(requireContext()))
+                viewModel.authenticate(requireActivity())
+        }
     }
 
 }

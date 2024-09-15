@@ -35,7 +35,9 @@ class LoginViewModel(
 
 
     fun isPasswordSaved(context: Context) =
-        keyStoreManager.checkBiometricSupport(context) && prefsHelper.loadBoolean(BIOMETRIC_SAVED)
+        keyStoreManager.checkBiometricSupport(context) &&
+                prefsHelper.loadBoolean(BIOMETRIC_SAVED) &&
+                !prefsHelper.loadString(PASSWORD_SAVED_KEY).isNullOrEmpty()
 
 
     fun saveUsername(username: String) = prefsHelper.saveString(USERNAME_SAVED_KEY, username)
@@ -43,9 +45,16 @@ class LoginViewModel(
     fun authenticate(context: FragmentActivity) {
         keyStoreManager.authenticate(context, object : BiometricResult {
             override fun onError(error: String) {
-                _authenticateResult.postValue(
-                    AuthenticateResultModel(AuthenticateResultType.ERROR, error)
-                )
+                if (error == AuthenticateResultType.REMOVED_KEY.name) {
+                    prefsHelper.remove(PASSWORD_SAVED_KEY)
+                    prefsHelper.remove(BIOMETRIC_SAVED)
+                    _authenticateResult.postValue(
+                        AuthenticateResultModel(AuthenticateResultType.REMOVED_KEY, error)
+                    )
+                } else
+                    _authenticateResult.postValue(
+                        AuthenticateResultModel(AuthenticateResultType.ERROR, error)
+                    )
             }
 
             override fun onCancel() {
@@ -57,35 +66,27 @@ class LoginViewModel(
                 )
             }
 
-            override fun onSuccess(cipher: Cipher?) {
-                if (cipher != null) {
-                    try {
-                        val encryptedData = prefsHelper.loadString(PASSWORD_SAVED_KEY)
-                        if (encryptedData != null) {
-                            val password = keyStoreManager.decrypt(
-                                cipher,
-                                Base64.decode(encryptedData, Base64.DEFAULT)
-                            )
-                            _authenticateResult.postValue(
-                                AuthenticateResultModel(AuthenticateResultType.SUCCESS, password)
-                            )
-                        } else {
-                            _authenticateResult.postValue(
-                                AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")
-                            )
-                        }
-                    } catch (e: Exception) {
+            override fun onSuccess(cipher: Cipher) {
+                try {
+                    val encryptedData = prefsHelper.loadString(PASSWORD_SAVED_KEY)
+                    if (encryptedData != null) {
+                        val password = keyStoreManager.decrypt(
+                            cipher,
+                            Base64.decode(encryptedData, Base64.DEFAULT)
+                        )
+                        _authenticateResult.postValue(
+                            AuthenticateResultModel(AuthenticateResultType.SUCCESS, password)
+                        )
+                    } else {
                         _authenticateResult.postValue(
                             AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")
                         )
-
                     }
-                } else {
-                    keyStoreManager.deleteKey()
-                    prefsHelper.remove(PASSWORD_SAVED_KEY)
+                } catch (e: Exception) {
                     _authenticateResult.postValue(
-                        AuthenticateResultModel(AuthenticateResultType.REMOVED_KEY, "Key Removed")
+                        AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")
                     )
+
                 }
             }
 
