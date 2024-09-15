@@ -5,4 +5,13 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:id="@+id/text"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:text="@string/password" />
+
 </FrameLayout>

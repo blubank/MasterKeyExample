@@ -1,7 +1,6 @@
 package ir.shahabazimi.masterkeyexample.ui.login
 
 import android.content.Context
-import android.util.Base64
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,10 +8,12 @@ import androidx.lifecycle.ViewModel
 import ir.shahabazimi.masterkeyexample.data.AuthenticateResultModel
 import ir.shahabazimi.masterkeyexample.data.AuthenticateResultType
 import ir.shahabazimi.masterkeyexample.utils.BiometricResult
+import ir.shahabazimi.masterkeyexample.utils.Constants.BIOMETRIC_SAVED
 import ir.shahabazimi.masterkeyexample.utils.Constants.PASSWORD_SAVED_KEY
 import ir.shahabazimi.masterkeyexample.utils.Constants.USERNAME_SAVED_KEY
 import ir.shahabazimi.masterkeyexample.utils.KeyStoreManager
 import ir.shahabazimi.masterkeyexample.utils.PrefsHelper
+import java.nio.charset.StandardCharsets
 import javax.crypto.Cipher
 
 /**
@@ -34,47 +35,52 @@ class LoginViewModel(
 
 
     fun isPasswordSaved(context: Context) =
-        keyStoreManager.checkBiometricSupport(context) && prefsHelper.loadBoolean(PASSWORD_SAVED_KEY)
+        keyStoreManager.checkBiometricSupport(context) && prefsHelper.loadBoolean(BIOMETRIC_SAVED)
 
+
+    fun saveUsername(username: String) = prefsHelper.saveString(USERNAME_SAVED_KEY, username)
 
     fun authenticate(context: FragmentActivity) {
-        keyStoreManager.authenticate(context, object : BiometricResult {
+        keyStoreManager.authenticate(context, Cipher.DECRYPT_MODE, object : BiometricResult {
             override fun onError(error: String) {
-                _authenticateResult.value =
+                _authenticateResult.postValue(
                     AuthenticateResultModel(AuthenticateResultType.ERROR, error)
+                )
             }
 
             override fun onCancel() {
-                _authenticateResult.value = AuthenticateResultModel(
-                    AuthenticateResultType.CANCELED,
-                    "Authentication cancelled"
+                _authenticateResult.postValue(
+                    AuthenticateResultModel(
+                        AuthenticateResultType.CANCELED,
+                        "Authentication cancelled"
+                    )
                 )
             }
 
             override fun onSuccess(cipher: Cipher?) {
                 if (cipher != null) {
                     try {
-                        cipher.init(
-                            Cipher.DECRYPT_MODE,
-                            keyStoreManager.getKey()
-                        )
                         val decryptedData = cipher.doFinal(
-                            prefsHelper.loadString(PASSWORD_SAVED_KEY)?.toByteArray()
+                            prefsHelper.loadString(PASSWORD_SAVED_KEY)
+                                ?.toByteArray(StandardCharsets.UTF_8)
                         )
-                        val password = Base64.encodeToString(decryptedData, Base64.DEFAULT)
+                        val password = String(decryptedData, StandardCharsets.UTF_8)
 
-                        _authenticateResult.value =
+                        _authenticateResult.postValue(
                             AuthenticateResultModel(AuthenticateResultType.SUCCESS, password)
+                        )
                     } catch (e: Exception) {
-                        _authenticateResult.value =
+                        _authenticateResult.postValue(
                             AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")
+                        )
 
                     }
                 } else {
                     keyStoreManager.deleteKey()
                     prefsHelper.remove(PASSWORD_SAVED_KEY)
-                    _authenticateResult.value =
+                    _authenticateResult.postValue(
                         AuthenticateResultModel(AuthenticateResultType.REMOVED_KEY, "Key Removed")
+                    )
                 }
             }
 

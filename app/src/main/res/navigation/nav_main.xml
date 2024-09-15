@@ -17,6 +17,7 @@
             android:id="@+id/action_loginFragment_to_hubFragment"
             app:destination="@id/hubFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/fingerprintFragment"
         android:name="ir.shahabazimi.masterkeyexample.ui.fingerprint.FingerprintFragment"
@@ -30,7 +31,8 @@
             app:nullable="true" />
         <action
             android:id="@+id/action_fingerprintFragment_to_hubFragment"
-            app:destination="@id/hubFragment" />
+            app:destination="@id/hubFragment"
+            app:popUpToInclusive="false" />
 
     </fragment>
     <fragment

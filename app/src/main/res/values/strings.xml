@@ -3,4 +3,6 @@
    <string name="username">username</string>
    <string name="password">password</string>
    <string name="login">Login</string>
+   <string name="enable_fingerprint">Enable Fingerprint</string>
+   <string name="do_not_enable_fingerprint">Not now</string>
 </resources>

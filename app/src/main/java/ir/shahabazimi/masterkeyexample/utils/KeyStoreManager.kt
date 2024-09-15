@@ -1,6 +1,7 @@
 package ir.shahabazimi.masterkeyexample.utils
 
 import android.content.Context
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricManager
@@ -9,11 +10,13 @@ import androidx.fragment.app.FragmentActivity
 import ir.shahabazimi.masterkeyexample.utils.Constants.ANDROID_KEY_STORE
 import ir.shahabazimi.masterkeyexample.utils.Constants.KEY_ALIAS
 import ir.shahabazimi.masterkeyexample.utils.Constants.KEY_SIZE
+import ir.shahabazimi.masterkeyexample.utils.Constants.initialIV
 import java.security.KeyStore
 import java.util.concurrent.Executors
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 
 /**
  * @Author: Shahab Azimi
@@ -21,19 +24,21 @@ import javax.crypto.SecretKey
  **/
 class KeyStoreManager {
 
-    private val cryptoObject: BiometricPrompt.CryptoObject
-        get() = generateAndStoreKey().let { key ->
-            val cipher = createCipher()
-            cipher.init(Cipher.ENCRYPT_MODE or Cipher.DECRYPT_MODE, key)
+    private fun cryptoObject(
+        mode: Int,
+    ): BiometricPrompt.CryptoObject {
+        return generateAndStoreKey().let { key ->
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            if (mode == Cipher.ENCRYPT_MODE)
+                cipher.init(mode, key)
+            else
+                cipher.init(
+                    mode, key, GCMParameterSpec(
+                        128, initialIV()
+                    )
+                )
             BiometricPrompt.CryptoObject(cipher)
         }
-
-    private fun createCipher(): Cipher {
-        return Cipher.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES + "/" +
-                    KeyProperties.BLOCK_MODE_CBC + "/" +
-                    KeyProperties.ENCRYPTION_PADDING_PKCS7
-        )
     }
 
     private fun generateAndStoreKey(): SecretKey {
@@ -47,13 +52,22 @@ class KeyStoreManager {
         val keyGenParameterSpec = KeyGenParameterSpec.Builder(
             KEY_ALIAS,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-            .setUserAuthenticationRequired(true)
-            .setKeySize(KEY_SIZE)
-            .setInvalidatedByBiometricEnrollment(true)
-            .build()
+        ).run {
+            setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            setUserAuthenticationRequired(true)
+            setKeySize(KEY_SIZE)
+            setInvalidatedByBiometricEnrollment(true)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                setUserAuthenticationParameters(
+                    0,
+                    KeyProperties.AUTH_BIOMETRIC_STRONG
+                )
+            } else {
+                setUserAuthenticationValidityDurationSeconds(15)
+            }
+
+        }.build()
 
         keyGenerator.init(keyGenParameterSpec)
         return keyGenerator.generateKey()
@@ -74,6 +88,7 @@ class KeyStoreManager {
 
     fun authenticate(
         fragmentActivity: FragmentActivity,
+        mode: Int,
         biometricListener: BiometricResult
     ) {
         val promptInfo = createPromptInfo()
@@ -89,7 +104,10 @@ class KeyStoreManager {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     val cipher = result.cryptoObject?.cipher
-                    biometricListener.onSuccess(cipher)
+                    if (cipher == null)
+                        biometricListener.onError("cipher is null")
+                    else
+                        biometricListener.onSuccess(cipher)
                 }
 
                 override fun onAuthenticationFailed() {
@@ -97,16 +115,13 @@ class KeyStoreManager {
                     biometricListener.onCancel()
                 }
             }
-        ).authenticate(promptInfo, cryptoObject)
+        ).authenticate(promptInfo, cryptoObject(mode))
     }
 
     fun checkBiometricSupport(context: Context): Boolean {
         val biometricManager = BiometricManager.from(context)
         return when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)) {
             BiometricManager.BIOMETRIC_SUCCESS -> true
-            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> false
-            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> false
-            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> false
             else -> false
         }
     }
