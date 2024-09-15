@@ -1,6 +1,7 @@
 package ir.shahabazimi.masterkeyexample.ui.login
 
 import android.content.Context
+import android.util.Base64
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -13,7 +14,6 @@ import ir.shahabazimi.masterkeyexample.utils.Constants.PASSWORD_SAVED_KEY
 import ir.shahabazimi.masterkeyexample.utils.Constants.USERNAME_SAVED_KEY
 import ir.shahabazimi.masterkeyexample.utils.KeyStoreManager
 import ir.shahabazimi.masterkeyexample.utils.PrefsHelper
-import java.nio.charset.StandardCharsets
 import javax.crypto.Cipher
 
 /**
@@ -41,7 +41,7 @@ class LoginViewModel(
     fun saveUsername(username: String) = prefsHelper.saveString(USERNAME_SAVED_KEY, username)
 
     fun authenticate(context: FragmentActivity) {
-        keyStoreManager.authenticate(context, Cipher.DECRYPT_MODE, object : BiometricResult {
+        keyStoreManager.authenticate(context, object : BiometricResult {
             override fun onError(error: String) {
                 _authenticateResult.postValue(
                     AuthenticateResultModel(AuthenticateResultType.ERROR, error)
@@ -60,15 +60,20 @@ class LoginViewModel(
             override fun onSuccess(cipher: Cipher?) {
                 if (cipher != null) {
                     try {
-                        val decryptedData = cipher.doFinal(
-                            prefsHelper.loadString(PASSWORD_SAVED_KEY)
-                                ?.toByteArray(StandardCharsets.UTF_8)
-                        )
-                        val password = String(decryptedData, StandardCharsets.UTF_8)
-
-                        _authenticateResult.postValue(
-                            AuthenticateResultModel(AuthenticateResultType.SUCCESS, password)
-                        )
+                        val encryptedData = prefsHelper.loadString(PASSWORD_SAVED_KEY)
+                        if (encryptedData != null) {
+                            val password = keyStoreManager.decrypt(
+                                cipher,
+                                Base64.decode(encryptedData, Base64.DEFAULT)
+                            )
+                            _authenticateResult.postValue(
+                                AuthenticateResultModel(AuthenticateResultType.SUCCESS, password)
+                            )
+                        } else {
+                            _authenticateResult.postValue(
+                                AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")
+                            )
+                        }
                     } catch (e: Exception) {
                         _authenticateResult.postValue(
                             AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")

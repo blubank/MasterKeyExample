@@ -5,15 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.os.bundleOf
-import androidx.navigation.NavArgs
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import ir.shahabazimi.masterkeyexample.R
 import ir.shahabazimi.masterkeyexample.data.AuthenticateResultType
 import ir.shahabazimi.masterkeyexample.databinding.FragmentFingerprintBinding
 import ir.shahabazimi.masterkeyexample.ui.BaseFragment
-import ir.shahabazimi.masterkeyexample.utils.Constants.PASSWORD_SAVED_KEY
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
@@ -42,7 +38,7 @@ class FingerprintFragment : BaseFragment<FragmentFingerprintBinding>() {
         }
 
         button1.setOnClickListener {
-            viewModel.authenticate(requireActivity(), args.password.orEmpty())
+            viewModel.authenticate(args.password.orEmpty())
         }
     }
 
