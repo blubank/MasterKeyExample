@@ -12,8 +12,8 @@ constraintlayout = "2.1.4"
 navigationFragment = "2.8.0"
 androidxBiometricVersion = '1.2.0-alpha05'
 androidxCryptoVersion = '1.1.0-alpha06'
-koinVersion = "3.5.3"
-args = "2.5.1"
+koinVersion = "3.5.6"
+args = "2.8.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
