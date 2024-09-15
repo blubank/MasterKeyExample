@@ -16,8 +16,11 @@ import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.PrivateKey
 import java.security.PublicKey
+import java.security.spec.MGF1ParameterSpec
 import java.util.concurrent.Executors
 import javax.crypto.Cipher
+import javax.crypto.spec.OAEPParameterSpec
+import javax.crypto.spec.PSource
 
 
 /**
@@ -28,16 +31,22 @@ class KeyStoreManager {
 
     companion object {
         private const val ANDROID_KEY_STORE = "AndroidKeyStore"
-        private const val ALGORITHM = "RSA/ECB/PKCS1Padding"
+        const val ALGORITHM = "RSA/None/OAEPWithSHA-256AndMGF1Padding"
         private const val KEY_SIZE = 2048
         private const val KEY_ALIAS = "master_key_example_alias"
+        val OAEPParams = OAEPParameterSpec(
+            "SHA-256",
+            "MGF1",
+            MGF1ParameterSpec.SHA256,
+            PSource.PSpecified.DEFAULT
+        )
     }
 
     private fun cryptoObject(
     ): BiometricPrompt.CryptoObject {
         return generateOrGetPrivateKey().let { key ->
             val cipher = Cipher.getInstance(ALGORITHM)
-            cipher.init(Cipher.DECRYPT_MODE, key)
+            cipher.init(Cipher.DECRYPT_MODE, key, OAEPParams)
             BiometricPrompt.CryptoObject(cipher)
         }
     }
@@ -51,13 +60,12 @@ class KeyStoreManager {
             KEY_ALIAS,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
         ).run {
-            setBlockModes(KeyProperties.BLOCK_MODE_ECB)
             setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
-            setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
-            setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+            setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_OAEP)
+            setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PSS)
             setUserAuthenticationRequired(true)
-            setKeySize(KEY_SIZE)
             setInvalidatedByBiometricEnrollment(true)
+            setKeySize(KEY_SIZE)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 setUserAuthenticationParameters(
                     0,
@@ -84,7 +92,7 @@ class KeyStoreManager {
     private fun getEncryptCipher(): Cipher {
         return generateOrGetPublicKey().let { key ->
             val cipher = Cipher.getInstance(ALGORITHM)
-            cipher.init(Cipher.ENCRYPT_MODE, key)
+            cipher.init(Cipher.ENCRYPT_MODE, key, OAEPParams)
             cipher
         }
     }
