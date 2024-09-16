@@ -58,7 +58,7 @@ class FingerprintFragment : BaseFragment<FragmentFingerprintBinding>() {
                 AuthenticateResultType.ERROR -> Toast.makeText(context, it.data, Toast.LENGTH_SHORT)
                     .show()
 
-                AuthenticateResultType.REMOVED_KEY -> {
+                AuthenticateResultType.REMOVE_KEY -> {
                     Toast.makeText(context, it.data, Toast.LENGTH_SHORT).show()
                     navigateToHub()
                 }

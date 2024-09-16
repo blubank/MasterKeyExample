@@ -2,7 +2,6 @@ package ir.shahabazimi.masterkeyexample.utils
 
 import android.content.Context
 import android.content.SharedPreferences
-import ir.shahabazimi.masterkeyexample.utils.Constants.PREFS_FILE_NAME
 
 /**
  * @Author: Shahab Azimi
@@ -14,19 +13,19 @@ class PrefsHelper private constructor(context: Context) {
         context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
     }
 
-
-    fun saveString(key: String, value: String) = with(pref.edit()) {
-        putString(key, value)
+    fun save(key: String, value: Any) = with(pref.edit()) {
+        when(value){
+            is String -> putString(key,value)
+            is Boolean -> putBoolean(key,value)
+            is Int -> putInt(key,value)
+            is Long -> putLong(key,value)
+            is Float -> putFloat(key,value)
+        }
         apply()
     }
 
 
     fun loadString(key: String) = pref.getString(key, null)
-
-    fun saveBoolean(key: String, value: Boolean) = with(pref.edit()) {
-        putBoolean(key, value)
-        apply()
-    }
 
     fun loadBoolean(key: String) = pref.getBoolean(key, false)
 
@@ -36,6 +35,12 @@ class PrefsHelper private constructor(context: Context) {
     }
 
     companion object {
+        private const val PREFS_FILE_NAME: String = "master_key_example_secure_pref"
+
+        const val BIOMETRIC_SAVED = "biometric_saved"
+        const val PASSWORD_SAVED_KEY = "password_saved_key"
+        const val USERNAME_SAVED_KEY = "username_saved_key"
+
         @Volatile
         private var instance: PrefsHelper? = null
         operator fun invoke(context: Context): PrefsHelper =

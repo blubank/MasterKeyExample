@@ -1,10 +1,9 @@
 package ir.shahabazimi.masterkeyexample.di
 
 import ir.shahabazimi.masterkeyexample.ui.fingerprint.FingerprintViewModel
-import ir.shahabazimi.masterkeyexample.ui.hub.HubViewModel
-import ir.shahabazimi.masterkeyexample.utils.PrefsHelper
 import ir.shahabazimi.masterkeyexample.ui.login.LoginViewModel
 import ir.shahabazimi.masterkeyexample.utils.KeyStoreManager
+import ir.shahabazimi.masterkeyexample.utils.PrefsHelper
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -17,8 +16,9 @@ val appModule = module {
     single {
         PrefsHelper(context = get())
     }
+
     single {
-        KeyStoreManager()
+        KeyStoreManager
     }
 
     viewModel {
@@ -29,7 +29,4 @@ val appModule = module {
         FingerprintViewModel(get(), get())
     }
 
-    viewModel {
-        HubViewModel()
-    }
 }

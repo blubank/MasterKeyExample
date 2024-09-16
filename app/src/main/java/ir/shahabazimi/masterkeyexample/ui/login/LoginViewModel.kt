@@ -1,19 +1,19 @@
 package ir.shahabazimi.masterkeyexample.ui.login
 
 import android.content.Context
-import android.util.Base64
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import ir.shahabazimi.masterkeyexample.data.AuthenticateErrorType
 import ir.shahabazimi.masterkeyexample.data.AuthenticateResultModel
 import ir.shahabazimi.masterkeyexample.data.AuthenticateResultType
 import ir.shahabazimi.masterkeyexample.utils.BiometricResult
-import ir.shahabazimi.masterkeyexample.utils.Constants.BIOMETRIC_SAVED
-import ir.shahabazimi.masterkeyexample.utils.Constants.PASSWORD_SAVED_KEY
-import ir.shahabazimi.masterkeyexample.utils.Constants.USERNAME_SAVED_KEY
 import ir.shahabazimi.masterkeyexample.utils.KeyStoreManager
 import ir.shahabazimi.masterkeyexample.utils.PrefsHelper
+import ir.shahabazimi.masterkeyexample.utils.PrefsHelper.Companion.BIOMETRIC_SAVED
+import ir.shahabazimi.masterkeyexample.utils.PrefsHelper.Companion.PASSWORD_SAVED_KEY
+import ir.shahabazimi.masterkeyexample.utils.PrefsHelper.Companion.USERNAME_SAVED_KEY
 import javax.crypto.Cipher
 
 /**
@@ -40,20 +40,20 @@ class LoginViewModel(
                 !prefsHelper.loadString(PASSWORD_SAVED_KEY).isNullOrEmpty()
 
 
-    fun saveUsername(username: String) = prefsHelper.saveString(USERNAME_SAVED_KEY, username)
+    fun saveUsername(username: String) = prefsHelper.save(USERNAME_SAVED_KEY, username)
 
     fun authenticate(context: FragmentActivity) {
         keyStoreManager.authenticate(context, object : BiometricResult {
-            override fun onError(error: String) {
-                if (error == AuthenticateResultType.REMOVED_KEY.name) {
+            override fun onError(type: AuthenticateErrorType, error: String?) {
+                if (type == AuthenticateErrorType.REMOVE_KEY) {
                     prefsHelper.remove(PASSWORD_SAVED_KEY)
                     prefsHelper.remove(BIOMETRIC_SAVED)
                     _authenticateResult.postValue(
-                        AuthenticateResultModel(AuthenticateResultType.REMOVED_KEY, error)
+                        AuthenticateResultModel(AuthenticateResultType.REMOVE_KEY, error.orEmpty())
                     )
                 } else
                     _authenticateResult.postValue(
-                        AuthenticateResultModel(AuthenticateResultType.ERROR, error)
+                        AuthenticateResultModel(AuthenticateResultType.ERROR, error.orEmpty())
                     )
             }
 
@@ -72,11 +72,16 @@ class LoginViewModel(
                     if (encryptedData != null) {
                         val password = keyStoreManager.decrypt(
                             cipher,
-                            Base64.decode(encryptedData, Base64.DEFAULT)
+                            encryptedData
                         )
-                        _authenticateResult.postValue(
-                            AuthenticateResultModel(AuthenticateResultType.SUCCESS, password)
-                        )
+                        if (password.isNullOrEmpty())
+                            _authenticateResult.postValue(
+                                AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")
+                            )
+                        else
+                            _authenticateResult.postValue(
+                                AuthenticateResultModel(AuthenticateResultType.SUCCESS, password)
+                            )
                     } else {
                         _authenticateResult.postValue(
                             AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")
@@ -84,7 +89,7 @@ class LoginViewModel(
                     }
                 } catch (e: Exception) {
                     _authenticateResult.postValue(
-                        AuthenticateResultModel(AuthenticateResultType.ERROR, "Try Again")
+                        AuthenticateResultModel(AuthenticateResultType.REMOVE_KEY, "Key Removed")
                     )
 
                 }
